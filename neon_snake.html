@@ -305,6 +305,7 @@
         nextDx = 1;
         nextDy = 0;
         score = 0;
+        speed = 10; // 重置速度
         scoreEl.innerText = score;
         createFood();
 
@@ -354,6 +355,14 @@
           scoreEl.innerText = score;
           playSound("eat");
 
+          // === 速度升级逻辑 ===
+          // 每吃一个食物，速度增加 0.5 (上限 25)
+          if (speed < 25) {
+            speed += 0.5;
+            clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, 1000 / speed);
+          }
+
           // 更新最高分
           if (score > highScore) {
             highScore = score;
@@ -362,7 +371,6 @@
           }
 
           createFood();
-          // 稍微增加难度? 这里保持恒定速度，想加速可以改这里
         } else {
           snake.pop(); // 如果没吃到，尾部移除
         }
