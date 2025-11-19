@@ -232,7 +232,7 @@
       // 游戏参数
       const gridSize = 20;
       const tileCount = 20; // 400 / 20
-      let speed = 10; // 每秒帧数
+      let speed = 3; // 每秒帧数
       let score = 0;
       let highScore = localStorage.getItem("snakeHighScore") || 0;
       highScoreEl.innerText = highScore;
@@ -305,7 +305,7 @@
         nextDx = 1;
         nextDy = 0;
         score = 0;
-        speed = 10; // 重置速度
+        speed = 3; // 重置速度
         scoreEl.innerText = score;
         createFood();
 
@@ -356,9 +356,9 @@
           playSound("eat");
 
           // === 速度升级逻辑 ===
-          // 每吃一个食物，速度增加 0.5 (上限 25)
+          // 每吃一个食物，速度增加 0.3 (上限 25)
           if (speed < 25) {
-            speed += 0.5;
+            speed += 0.3;
             clearInterval(gameInterval);
             gameInterval = setInterval(gameLoop, 1000 / speed);
           }
