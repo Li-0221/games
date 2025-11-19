@@ -295,7 +295,7 @@
           </span>
         </a>
 
-        <!-- 4. [NEW] 霓虹打砖块卡片 -->
+        <!-- 4. 霓虹打砖块卡片 -->
         <a
           href="neon_breaker.html"
           class="game-card group rounded-2xl overflow-hidden p-6 flex flex-col items-center text-center cursor-pointer"
@@ -308,12 +308,10 @@
               class="absolute inset-0 flex items-center justify-center opacity-50 group-hover:opacity-100 transition-opacity"
             >
               <svg viewBox="0 0 100 100" class="w-32 h-32">
-                <!-- Bricks -->
                 <rect x="10" y="10" width="18" height="6" fill="#ef4444" />
                 <rect x="30" y="10" width="18" height="6" fill="#f97316" />
                 <rect x="50" y="10" width="18" height="6" fill="#eab308" />
                 <rect x="70" y="10" width="18" height="6" fill="#22c55e" />
-
                 <rect x="20" y="18" width="18" height="6" fill="#3b82f6" />
                 <rect
                   x="40"
@@ -324,8 +322,6 @@
                   class="animate-pulse"
                 />
                 <rect x="60" y="18" width="18" height="6" fill="#ef4444" />
-
-                <!-- Paddle & Ball -->
                 <rect x="35" y="80" width="30" height="4" fill="#eab308" />
                 <circle cx="50" cy="60" r="3" fill="white">
                   <animate
@@ -358,6 +354,94 @@
             PLAY NOW
           </span>
         </a>
+
+        <!-- 5. [NEW] 霓虹推箱子卡片 (横跨两列) -->
+        <a
+          href="neon_sokoban.html"
+          class="game-card group rounded-2xl overflow-hidden p-6 flex flex-col items-center text-center cursor-pointer md:col-span-2"
+          style="--hover-color: #3b82f6; --hover-glow: rgba(59, 130, 246, 0.3)"
+        >
+          <div
+            class="w-full aspect-[21/9] bg-slate-900 rounded-xl mb-6 relative overflow-hidden border border-slate-700 group-hover:border-blue-500/50 transition-colors flex items-center justify-center"
+          >
+            <div
+              class="absolute inset-0 flex items-center justify-center opacity-50 group-hover:opacity-100 transition-opacity"
+            >
+              <svg viewBox="0 0 200 100" class="w-64 h-32">
+                <!-- Wall -->
+                <rect
+                  x="60"
+                  y="20"
+                  width="20"
+                  height="20"
+                  fill="#1e293b"
+                  stroke="#3b82f6"
+                  stroke-width="1"
+                />
+                <rect
+                  x="80"
+                  y="20"
+                  width="20"
+                  height="20"
+                  fill="#1e293b"
+                  stroke="#3b82f6"
+                  stroke-width="1"
+                />
+                <!-- Box -->
+                <rect
+                  x="80"
+                  y="40"
+                  width="20"
+                  height="20"
+                  fill="#eab308"
+                  class="group-hover:translate-x-2 transition-transform duration-500"
+                />
+                <!-- Player -->
+                <circle
+                  cx="60"
+                  cy="50"
+                  r="8"
+                  fill="#3b82f6"
+                  class="group-hover:translate-x-2 transition-transform duration-500"
+                />
+                <!-- Target -->
+                <circle
+                  cx="130"
+                  cy="50"
+                  r="8"
+                  fill="none"
+                  stroke="#ef4444"
+                  stroke-width="2"
+                  stroke-dasharray="2"
+                />
+                <path
+                  d="M126 46 L134 54 M134 46 L126 54"
+                  stroke="#ef4444"
+                  stroke-width="2"
+                />
+              </svg>
+            </div>
+            <div
+              class="absolute bottom-0 left-0 w-full h-1 bg-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"
+            ></div>
+          </div>
+
+          <h2
+            class="text-2xl font-bold text-blue-400 mb-2 pixel-font text-xs md:text-lg"
+          >
+            NEON SOKOBAN
+          </h2>
+          <h3 class="text-xl font-bold text-white mb-3">霓虹推箱子</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-6 max-w-lg">
+            程序化生成的无限关卡。每次都是全新的谜题，三种难度可选。支持撤销操作，锻炼你的逻辑思维。
+          </p>
+
+          <span
+            class="mt-auto px-6 py-2 border border-blue-500/30 text-blue-400 rounded-full text-sm group-hover:bg-blue-500 group-hover:text-slate-900 transition-all font-bold tracking-widest"
+          >
+            PLAY NOW
+          </span>
+        </a>
       </div>
     </main>
 
@@ -374,6 +458,9 @@
         ></span>
         <span
           class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse delay-200"
+        ></span>
+        <span
+          class="w-2 h-2 rounded-full bg-blue-500 animate-pulse delay-300"
         ></span>
       </div>
     </footer>

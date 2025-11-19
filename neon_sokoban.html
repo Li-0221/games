@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>霓虹推箱子</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap");
+
+      body {
+        background-color: #020617; /* Slate 950 */
+        font-family: "Orbitron", sans-serif;
+        touch-action: manipulation;
+        color: white;
+        overflow: hidden;
+      }
+
+      canvas {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.2); /* Blue glow */
+        background-color: #0f172a;
+        border: 2px solid #1e293b;
+      }
+
+      .neon-text {
+        text-shadow: 0 0 10px currentColor;
+      }
+
+      .btn-neon {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s;
+      }
+      .btn-neon:active {
+        transform: scale(0.95);
+        background: rgba(59, 130, 246, 0.2);
+        border-color: #3b82f6;
+      }
+      .btn-active {
+        background: rgba(59, 130, 246, 0.3);
+        border-color: #3b82f6;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+      }
+
+      /* 胜利动画 */
+      @keyframes win-pulse {
+        0% {
+          box-shadow: 0 0 20px #22c55e;
+          border-color: #22c55e;
+        }
+        50% {
+          box-shadow: 0 0 50px #22c55e;
+          border-color: #4ade80;
+        }
+        100% {
+          box-shadow: 0 0 20px #22c55e;
+          border-color: #22c55e;
+        }
+      }
+      .win-effect {
+        animation: win-pulse 1.5s infinite;
+      }
+    </style>
+  </head>
+  <body
+    class="h-screen w-screen flex flex-col items-center justify-center relative"
+  >
+    <!-- 顶部 UI -->
+    <div class="absolute top-2 w-full max-w-2xl flex flex-col gap-2 px-4 z-10">
+      <div class="flex justify-between items-end">
+        <div>
+          <h1
+            class="text-2xl font-bold text-blue-400 neon-text tracking-widest"
+          >
+            SOKOBAN
+          </h1>
+          <p class="text-[10px] text-slate-500">NEON EDITION</p>
+        </div>
+        <div class="text-right">
+          <p class="text-[10px] text-slate-400">STEPS</p>
+          <p id="stepEl" class="text-2xl text-white">0</p>
+        </div>
+      </div>
+
+      <!-- 难度选择 -->
+      <div class="flex justify-center gap-2 mt-2">
+        <button
+          onclick="setDifficulty('easy')"
+          id="btn-easy"
+          class="btn-neon px-4 py-1 text-xs rounded text-green-400"
+        >
+          EASY
+        </button>
+        <button
+          onclick="setDifficulty('medium')"
+          id="btn-medium"
+          class="btn-neon px-4 py-1 text-xs rounded text-blue-400 btn-active"
+        >
+          MEDIUM
+        </button>
+        <button
+          onclick="setDifficulty('hard')"
+          id="btn-hard"
+          class="btn-neon px-4 py-1 text-xs rounded text-purple-400"
+        >
+          HARD
+        </button>
+      </div>
+    </div>
+
+    <!-- 游戏区域 -->
+    <div class="relative mt-16">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- 胜利遮罩 -->
+      <div
+        id="winOverlay"
+        class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-20 hidden"
+      >
+        <h2 class="text-4xl font-bold text-green-400 mb-2 neon-text">
+          LEVEL CLEARED
+        </h2>
+        <p class="text-sm text-slate-300 mb-6">SYSTEM HACKED SUCCESSFULLY</p>
+        <button
+          onclick="generateLevel()"
+          class="px-8 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded shadow-[0_0_15px_rgba(34,197,94,0.6)]"
+        >
+          NEXT LEVEL
+        </button>
+      </div>
+    </div>
+
+    <!-- 底部控制 -->
+    <div class="absolute bottom-6 flex flex-col items-center gap-4 w-full px-4">
+      <div class="flex gap-4">
+        <button
+          onclick="undo()"
+          class="btn-neon w-12 h-12 rounded-full flex items-center justify-center text-yellow-400"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+            />
+          </svg>
+        </button>
+        <button
+          onclick="generateLevel()"
+          class="btn-neon w-12 h-12 rounded-full flex items-center justify-center text-red-400"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <!-- 虚拟方向键 -->
+      <div class="grid grid-cols-3 gap-2 sm:hidden">
+        <div></div>
+        <button
+          class="btn-neon w-14 h-14 rounded flex items-center justify-center text-blue-300"
+          onclick="movePlayer(0, -1)"
+        >
+          ↑
+        </button>
+        <div></div>
+        <button
+          class="btn-neon w-14 h-14 rounded flex items-center justify-center text-blue-300"
+          onclick="movePlayer(-1, 0)"
+        >
+          ←
+        </button>
+        <button
+          class="btn-neon w-14 h-14 rounded flex items-center justify-center text-blue-300"
+          onclick="movePlayer(0, 1)"
+        >
+          ↓
+        </button>
+        <button
+          class="btn-neon w-14 h-14 rounded flex items-center justify-center text-blue-300"
+          onclick="movePlayer(1, 0)"
+        >
+          →
+        </button>
+      </div>
+
+      <p class="text-[10px] text-slate-600 sm:block hidden">
+        Arrow Keys / WASD to Move | Z to Undo | R to Reset
+      </p>
+    </div>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const stepEl = document.getElementById("stepEl");
+        const winOverlay = document.getElementById("winOverlay");
+
+        // 游戏常量
+        const TILE_SIZE = 40;
+        const WALL = 1;
+        const FLOOR = 0;
+        const TARGET = 2;
+
+        // 游戏状态
+        let grid = []; // 0: floor, 1: wall, 2: target
+        let boxes = []; // {x, y}
+        let player = { x: 0, y: 0 };
+        let steps = 0;
+        let history = []; // 撤销栈
+        let currentDiff = "medium";
+
+        let cols = 10;
+        let rows = 10;
+        let boxCount = 3;
+
+        // 难度配置
+        const DIFFICULTY = {
+          easy: { cols: 8, rows: 8, boxes: 2, iterations: 100 },
+          medium: { cols: 10, rows: 10, boxes: 3, iterations: 200 },
+          hard: { cols: 12, rows: 12, boxes: 5, iterations: 400 }
+        };
+
+        // 设置难度
+        window.setDifficulty = function (diff) {
+          currentDiff = diff;
+
+          // 更新按钮样式
+          ["easy", "medium", "hard"].forEach((d) => {
+            const btn = document.getElementById(`btn-${d}`);
+            if (d === diff) btn.classList.add("btn-active");
+            else btn.classList.remove("btn-active");
+          });
+
+          generateLevel();
+        };
+
+        // === 地图生成器 (反向生成法) ===
+        // 思路：先生成空房间 -> 随机放目标点和箱子(重合) -> 玩家“拉”箱子随机走N步 -> 得到初始状态
+        window.generateLevel = function () {
+          const conf = DIFFICULTY[currentDiff];
+          cols = conf.cols;
+          rows = conf.rows;
+          boxCount = conf.boxes;
+
+          let success = false;
+          // 防止死循环，最多尝试100次
+          let attempts = 0;
+          while (!success && attempts < 100) {
+            success = tryGenerate(conf);
+            attempts++;
+          }
+
+          // 重置状态
+          steps = 0;
+          history = [];
+          stepEl.innerText = 0;
+          winOverlay.classList.add("hidden");
+          canvas.classList.remove("win-effect");
+
+          resizeCanvas();
+          draw();
+        };
+
+        function tryGenerate(conf) {
+          // 1. 初始化全墙壁
+          grid = Array(rows)
+            .fill()
+            .map(() => Array(cols).fill(WALL));
+
+          // 2. 挖一个空地 (简单的随机游走或矩形填充)
+          let floorCells = [];
+
+          // 先挖一个核心区域
+          for (let y = 2; y < rows - 2; y++) {
+            for (let x = 2; x < cols - 2; x++) {
+              grid[y][x] = FLOOR;
+              floorCells.push({ x, y });
+            }
+          }
+
+          // === 2.5 增加随机障碍物 (关键修改) ===
+          // 在空地中间随机生成一些墙壁，增加复杂性
+          // 数量跟地图大小挂钩
+          let obstacleCount =
+            Math.floor(cols * rows * 0.06) + Math.floor(Math.random() * 2);
+
+          for (let i = 0; i < obstacleCount; i++) {
+            // 随机选一个内部坐标
+            let ox = Math.floor(Math.random() * (cols - 4)) + 2;
+            let oy = Math.floor(Math.random() * (rows - 4)) + 2;
+
+            if (grid[oy][ox] === FLOOR) {
+              grid[oy][ox] = WALL;
+              // 必须从 floorCells 移除，防止目标点生成在墙里
+              floorCells = floorCells.filter((c) => c.x !== ox || c.y !== oy);
+            }
+          }
+
+          // 3. 放置目标点 (就是箱子最终位置)
+          let targets = [];
+          // 洗牌空地
+          floorCells.sort(() => Math.random() - 0.5);
+
+          if (floorCells.length < boxCount) return false; // 空间不足
+
+          for (let i = 0; i < boxCount; i++) {
+            if (i < floorCells.length) {
+              let pos = floorCells[i];
+              grid[pos.y][pos.x] = TARGET;
+              targets.push({ x: pos.x, y: pos.y });
+            }
+          }
+
+          // 4. 初始化箱子位置 (等于目标点)
+          boxes = targets.map((t) => ({ ...t }));
+
+          // 5. 放置玩家 (在非目标的空地上，或者任意合法位置)
+          let startPlayer = findFreeNeighbor(targets[0].x, targets[0].y);
+          if (!startPlayer) return false; // 生成失败
+          player = startPlayer;
+
+          // 6. 反向“拉”箱子 (Reverse Play)
+          let movesMade = 0;
+          for (let i = 0; i < conf.iterations; i++) {
+            // 随机选一个箱子
+            let boxIdx = Math.floor(Math.random() * boxes.length);
+            let box = boxes[boxIdx];
+
+            // 随机选一个方向 (上右下左)
+            let dirs = [
+              [0, -1],
+              [1, 0],
+              [0, 1],
+              [-1, 0]
+            ];
+            dirs.sort(() => Math.random() - 0.5);
+
+            for (let d of dirs) {
+              let pullX = box.x + d[0]; // 玩家拉箱子时站的位置
+              let pullY = box.y + d[1];
+              let nextBoxX = box.x + d[0]; // 箱子去的新位置 (其实就是玩家现在的位置...不对，反向拉)
+
+              // 查找箱子四周可达的空位
+              let neighbors = getValidPullPositions(box);
+              if (neighbors.length > 0) {
+                let move =
+                  neighbors[Math.floor(Math.random() * neighbors.length)];
+
+                // 检查玩家是否能走到 playerStand
+                if (isReachable(player, move.playerStand)) {
+                  // 执行拉动
+                  box.x = move.playerStand.x;
+                  box.y = move.playerStand.y;
+                  player.x = move.playerEnd.x;
+                  player.y = move.playerEnd.y;
+                  movesMade++;
+                  break;
+                }
+              }
+            }
+          }
+
+          // 如果箱子根本没动，或者动的太少，重新生成
+          if (movesMade < 5) return false;
+
+          return true;
+        }
+
+        function getValidPullPositions(box) {
+          let moves = [];
+          const dirs = [
+            [0, -1],
+            [1, 0],
+            [0, 1],
+            [-1, 0]
+          ]; // 对应拉动方向
+
+          for (let d of dirs) {
+            // 玩家站在 (bx + dx, by + dy) 把箱子拉过来
+            let standX = box.x + d[0];
+            let standY = box.y + d[1];
+
+            // 拉完后，玩家退到 (standX + dx, standY + dy)
+            let endX = standX + d[0];
+            let endY = standY + d[1];
+
+            if (
+              isValidPos(standX, standY) &&
+              isValidPos(endX, endY) &&
+              !isBoxAt(standX, standY) &&
+              !isBoxAt(endX, endY)
+            ) {
+              moves.push({
+                playerStand: { x: standX, y: standY },
+                playerEnd: { x: endX, y: endY }
+              });
+            }
+          }
+          return moves;
+        }
+
+        // 检查连通性
+        function isReachable(start, end) {
+          if (start.x === end.x && start.y === end.y) return true;
+          // 简单的 BFS
+          let queue = [start];
+          let visited = new Set();
+          visited.add(start.x + "," + start.y);
+
+          while (queue.length > 0) {
+            let curr = queue.shift();
+            if (curr.x === end.x && curr.y === end.y) return true;
+
+            const dirs = [
+              [0, -1],
+              [1, 0],
+              [0, 1],
+              [-1, 0]
+            ];
+            for (let d of dirs) {
+              let nx = curr.x + d[0];
+              let ny = curr.y + d[1];
+              let key = nx + "," + ny;
+
+              if (!visited.has(key) && isValidPos(nx, ny) && !isBoxAt(nx, ny)) {
+                visited.add(key);
+                queue.push({ x: nx, y: ny });
+              }
+            }
+          }
+          return false;
+        }
+
+        function findFreeNeighbor(x, y) {
+          const dirs = [
+            [0, -1],
+            [1, 0],
+            [0, 1],
+            [-1, 0]
+          ];
+          for (let d of dirs) {
+            let nx = x + d[0];
+            let ny = y + d[1];
+            if (isValidPos(nx, ny) && !isBoxAt(nx, ny)) return { x: nx, y: ny };
+          }
+          return null;
+        }
+
+        function isValidPos(x, y) {
+          return (
+            x >= 0 && x < cols && y >= 0 && y < rows && grid[y][x] !== WALL
+          );
+        }
+
+        function isBoxAt(x, y) {
+          return boxes.some((b) => b.x === x && b.y === y);
+        }
+
+        function resizeCanvas() {
+          let size = Math.min(window.innerWidth - 40, 500);
+          canvas.width = size;
+          canvas.height = size;
+        }
+        window.addEventListener("resize", () => {
+          resizeCanvas();
+          draw();
+        });
+
+        // === 游戏逻辑 ===
+
+        window.movePlayer = function (dx, dy) {
+          if (
+            winOverlay.classList.contains("flex") &&
+            !winOverlay.classList.contains("hidden")
+          )
+            return;
+
+          let nextX = player.x + dx;
+          let nextY = player.y + dy;
+
+          // 撞墙
+          if (grid[nextY][nextX] === WALL) return;
+
+          // 撞箱子
+          let boxIndex = boxes.findIndex((b) => b.x === nextX && b.y === nextY);
+
+          if (boxIndex !== -1) {
+            // 尝试推箱子
+            let nextBoxX = nextX + dx;
+            let nextBoxY = nextY + dy;
+
+            // 箱子后面是墙或另一个箱子
+            if (
+              grid[nextBoxY][nextBoxX] === WALL ||
+              isBoxAt(nextBoxX, nextBoxY)
+            ) {
+              return;
+            }
+
+            // 记录历史
+            saveState();
+
+            // 移动箱子
+            boxes[boxIndex].x = nextBoxX;
+            boxes[boxIndex].y = nextBoxY;
+
+            // 移动玩家
+            player.x = nextX;
+            player.y = nextY;
+
+            steps++;
+          } else {
+            // 只是移动玩家
+            saveState();
+            player.x = nextX;
+            player.y = nextY;
+            steps++;
+          }
+
+          stepEl.innerText = steps;
+          draw();
+          checkWin();
+        };
+
+        window.undo = function () {
+          if (history.length === 0) return;
+          let state = history.pop();
+          player = { ...state.player };
+          boxes = state.boxes.map((b) => ({ ...b }));
+          steps = state.steps;
+          stepEl.innerText = steps;
+          draw();
+        };
+
+        function saveState() {
+          history.push({
+            player: { ...player },
+            boxes: boxes.map((b) => ({ ...b })),
+            steps: steps
+          });
+          if (history.length > 50) history.shift(); // 限制历史长度
+        }
+
+        function checkWin() {
+          let count = 0;
+          for (let b of boxes) {
+            if (grid[b.y][b.x] === TARGET) count++;
+          }
+          if (count === boxes.length) {
+            // WIN
+            setTimeout(() => {
+              winOverlay.classList.remove("hidden");
+              canvas.classList.add("win-effect");
+            }, 200);
+          }
+        }
+
+        // === 渲染 ===
+
+        function draw() {
+          // 计算缩放比例
+          const cellSize = canvas.width / cols;
+
+          // 清空
+          ctx.fillStyle = "#0f172a";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+              let px = x * cellSize;
+              let py = y * cellSize;
+
+              // 墙壁
+              if (grid[y][x] === WALL) {
+                ctx.fillStyle = "#1e293b";
+                ctx.fillRect(px, py, cellSize, cellSize);
+                // 霓虹边框
+                ctx.strokeStyle = "#3b82f6";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+              }
+              // 目标点
+              else if (grid[y][x] === TARGET) {
+                ctx.beginPath();
+                ctx.arc(
+                  px + cellSize / 2,
+                  py + cellSize / 2,
+                  cellSize / 4,
+                  0,
+                  Math.PI * 2
+                );
+                ctx.fillStyle = "rgba(239, 68, 68, 0.3)"; // Red glow
+                ctx.fill();
+                ctx.strokeStyle = "#ef4444";
+                ctx.stroke();
+                // 画个叉
+                ctx.beginPath();
+                ctx.moveTo(px + cellSize / 3, py + cellSize / 3);
+                ctx.lineTo(px + (cellSize * 2) / 3, py + (cellSize * 2) / 3);
+                ctx.moveTo(px + (cellSize * 2) / 3, py + cellSize / 3);
+                ctx.lineTo(px + cellSize / 3, py + (cellSize * 2) / 3);
+                ctx.stroke();
+              }
+              // 地板点缀
+              else {
+                ctx.fillStyle = "#1e293b"; // 小点
+                ctx.fillRect(
+                  px + cellSize / 2 - 1,
+                  py + cellSize / 2 - 1,
+                  2,
+                  2
+                );
+              }
+            }
+          }
+
+          // 箱子
+          for (let b of boxes) {
+            let px = b.x * cellSize;
+            let py = b.y * cellSize;
+            let isOnTarget = grid[b.y][b.x] === TARGET;
+
+            ctx.fillStyle = isOnTarget ? "#22c55e" : "#eab308"; // Green if done, else Yellow
+            ctx.shadowBlur = isOnTarget ? 20 : 10;
+            ctx.shadowColor = ctx.fillStyle;
+
+            ctx.fillRect(px + 4, py + 4, cellSize - 8, cellSize - 8);
+
+            // 箱子纹理
+            ctx.strokeStyle = "rgba(0,0,0,0.3)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(px + 8, py + 8, cellSize - 16, cellSize - 16);
+
+            ctx.shadowBlur = 0;
+          }
+
+          // 玩家
+          let px = player.x * cellSize;
+          let py = player.y * cellSize;
+
+          ctx.fillStyle = "#3b82f6"; // Blue
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = "#3b82f6";
+          ctx.beginPath();
+          ctx.arc(
+            px + cellSize / 2,
+            py + cellSize / 2,
+            cellSize / 3,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+
+          // 玩家眼睛
+          ctx.fillStyle = "white";
+          ctx.fillRect(px + cellSize / 2 - 4, py + cellSize / 2 - 2, 3, 3);
+          ctx.fillRect(px + cellSize / 2 + 2, py + cellSize / 2 - 2, 3, 3);
+
+          ctx.shadowBlur = 0;
+        }
+
+        // 键盘事件
+        document.addEventListener("keydown", (e) => {
+          switch (e.key) {
+            case "ArrowUp":
+            case "w":
+            case "W":
+              movePlayer(0, -1);
+              break;
+            case "ArrowDown":
+            case "s":
+            case "S":
+              movePlayer(0, 1);
+              break;
+            case "ArrowLeft":
+            case "a":
+            case "A":
+              movePlayer(-1, 0);
+              break;
+            case "ArrowRight":
+            case "d":
+            case "D":
+              movePlayer(1, 0);
+              break;
+            case "z":
+            case "Z":
+              undo();
+              break;
+            case "r":
+            case "R":
+              generateLevel();
+              break;
+          }
+        });
+
+        // 初始化
+        generateLevel();
+      })();
+    </script>
+  </body>
+</html>
