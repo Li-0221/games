@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>霓虹游戏厅 | Neon Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap");
+
+      body {
+        background-color: #020617; /* Slate 950 */
+        font-family: "Orbitron", sans-serif;
+        color: white;
+        overflow-x: hidden;
+      }
+
+      /* 背景网格动画 */
+      .bg-grid {
+        background-size: 40px 40px;
+        background-image: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px
+          ),
+          linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.05) 1px,
+            transparent 1px
+          );
+        mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        -webkit-mask-image: linear-gradient(
+          to bottom,
+          black 40%,
+          transparent 100%
+        );
+        animation: moveGrid 20s linear infinite;
+      }
+
+      @keyframes moveGrid {
+        0% {
+          transform: translateY(0);
+        }
+        100% {
+          transform: translateY(40px);
+        }
+      }
+
+      /* 霓虹标题动画 */
+      .neon-title {
+        text-shadow: 0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #d946ef;
+        animation: pulsate 3s infinite alternate;
+      }
+
+      @keyframes pulsate {
+        0% {
+          text-shadow: 0 0 10px #a855f7, 0 0 20px #a855f7;
+        }
+        100% {
+          text-shadow: 0 0 15px #a855f7, 0 0 30px #d946ef, 0 0 50px #d946ef;
+        }
+      }
+
+      /* 游戏卡片 */
+      .game-card {
+        background: rgba(30, 41, 59, 0.5); /* Slate 800 with opacity */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+      }
+
+      .game-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--hover-color);
+        box-shadow: 0 0 30px var(--hover-glow);
+      }
+
+      .pixel-font {
+        font-family: "Press Start 2P", cursive;
+      }
+
+      /* 装饰性发光球 */
+      .glow-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: -1;
+        opacity: 0.4;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col relative">
+    <!-- 动态背景层 -->
+    <div
+      class="fixed inset-0 bg-grid z-0 pointer-events-none h-[150%] -top-[20%]"
+    ></div>
+    <div class="glow-orb w-96 h-96 bg-purple-600 top-0 left-0"></div>
+    <div class="glow-orb w-96 h-96 bg-cyan-600 bottom-0 right-0"></div>
+
+    <!-- 头部 -->
+    <header class="relative z-10 py-12 text-center">
+      <h1 class="text-5xl md:text-7xl font-bold mb-4 neon-title tracking-wider">
+        NEON ARCADE
+      </h1>
+      <p class="text-slate-400 text-sm md:text-base tracking-[0.2em] uppercase">
+        Web Browser Game Hub
+      </p>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="relative z-10 flex-grow container mx-auto px-4 pb-20">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <!-- 贪吃蛇卡片 -->
+        <a
+          href="neon_snake.html"
+          class="game-card group rounded-2xl overflow-hidden p-6 flex flex-col items-center text-center cursor-pointer"
+          style="--hover-color: #4ade80; --hover-glow: rgba(74, 222, 128, 0.3)"
+        >
+          <div
+            class="w-full aspect-video bg-slate-900 rounded-xl mb-6 relative overflow-hidden border border-slate-700 group-hover:border-green-500/50 transition-colors flex items-center justify-center"
+          >
+            <!-- 简单的 CSS 贪吃蛇示意图 -->
+            <div
+              class="absolute inset-0 flex items-center justify-center opacity-50 group-hover:opacity-100 transition-opacity"
+            >
+              <svg viewBox="0 0 100 100" class="w-32 h-32 fill-green-500">
+                <rect
+                  x="20"
+                  y="40"
+                  width="10"
+                  height="10"
+                  class="animate-pulse"
+                />
+                <rect x="30" y="40" width="10" height="10" />
+                <rect x="40" y="40" width="10" height="10" />
+                <rect x="50" y="40" width="10" height="10" />
+                <rect x="50" y="30" width="10" height="10" />
+                <rect
+                  x="70"
+                  y="30"
+                  width="10"
+                  height="10"
+                  class="fill-pink-500 animate-bounce"
+                />
+              </svg>
+            </div>
+            <div
+              class="absolute bottom-0 left-0 w-full h-1 bg-green-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"
+            ></div>
+          </div>
+
+          <h2
+            class="text-2xl font-bold text-green-400 mb-2 pixel-font text-xs md:text-lg"
+          >
+            NEON SNAKE
+          </h2>
+          <h3 class="text-xl font-bold text-white mb-3">霓虹贪吃蛇</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-6">
+            经典玩法的现代重制。在霓虹灯光中控制你的蛇，吞噬发光能量块，挑战最高分。支持触屏与键盘操作。
+          </p>
+
+          <span
+            class="mt-auto px-6 py-2 border border-green-500/30 text-green-400 rounded-full text-sm group-hover:bg-green-500 group-hover:text-slate-900 transition-all font-bold tracking-widest"
+          >
+            PLAY NOW
+          </span>
+        </a>
+
+        <!-- 俄罗斯方块卡片 -->
+        <a
+          href="cyber_tetris.html"
+          class="game-card group rounded-2xl overflow-hidden p-6 flex flex-col items-center text-center cursor-pointer"
+          style="--hover-color: #06b6d4; --hover-glow: rgba(6, 182, 212, 0.3)"
+        >
+          <div
+            class="w-full aspect-video bg-slate-900 rounded-xl mb-6 relative overflow-hidden border border-slate-700 group-hover:border-cyan-500/50 transition-colors flex items-center justify-center"
+          >
+            <!-- 简单的 CSS 俄罗斯方块示意图 -->
+            <div
+              class="absolute inset-0 flex items-center justify-center opacity-50 group-hover:opacity-100 transition-opacity"
+            >
+              <svg viewBox="0 0 100 100" class="w-32 h-32">
+                <path d="M35 30 H45 V40 H35 Z" fill="#ef4444" />
+                <path d="M45 30 H55 V40 H45 Z" fill="#ef4444" />
+                <path d="M45 40 H55 V50 H45 Z" fill="#ef4444" />
+                <path d="M55 40 H65 V50 H55 Z" fill="#ef4444" />
+
+                <path
+                  d="M35 60 H45 V70 H35 Z"
+                  fill="#06b6d4"
+                  class="group-hover:translate-y-2 transition-transform duration-700"
+                />
+                <path
+                  d="M45 60 H55 V70 H45 Z"
+                  fill="#06b6d4"
+                  class="group-hover:translate-y-2 transition-transform duration-700"
+                />
+                <path
+                  d="M55 60 H65 V70 H55 Z"
+                  fill="#06b6d4"
+                  class="group-hover:translate-y-2 transition-transform duration-700"
+                />
+                <path
+                  d="M65 60 H75 V70 H65 Z"
+                  fill="#06b6d4"
+                  class="group-hover:translate-y-2 transition-transform duration-700"
+                />
+              </svg>
+            </div>
+            <div
+              class="absolute bottom-0 left-0 w-full h-1 bg-cyan-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"
+            ></div>
+          </div>
+
+          <h2
+            class="text-2xl font-bold text-cyan-400 mb-2 pixel-font text-xs md:text-lg"
+          >
+            CYBER TETRIS
+          </h2>
+          <h3 class="text-xl font-bold text-white mb-3">赛博方块</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-6">
+            带有粒子消除特效的硬核方块挑战。支持硬降落、下落预览和移动端操作。在合成波风格中堆叠你的高分。
+          </p>
+
+          <span
+            class="mt-auto px-6 py-2 border border-cyan-500/30 text-cyan-400 rounded-full text-sm group-hover:bg-cyan-500 group-hover:text-slate-900 transition-all font-bold tracking-widest"
+          >
+            PLAY NOW
+          </span>
+        </a>
+      </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="relative z-10 py-6 text-center text-slate-600 text-xs">
+      <p>&copy; 2025 NEON ARCADE. Made with AI.</p>
+      <div class="flex justify-center gap-4 mt-2">
+        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        <span
+          class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse delay-75"
+        ></span>
+        <span
+          class="w-2 h-2 rounded-full bg-purple-500 animate-pulse delay-150"
+        ></span>
+      </div>
+    </footer>
+  </body>
+</html>
