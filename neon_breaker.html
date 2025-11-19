@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>霓虹打砖块</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap");
+
+      body {
+        background-color: #020617; /* Slate 950 */
+        font-family: "Orbitron", sans-serif;
+        touch-action: none;
+        overflow: hidden;
+        color: white;
+      }
+
+      canvas {
+        box-shadow: 0 0 25px rgba(234, 179, 8, 0.2); /* Yellow glow */
+        background-color: #0f172a;
+        border: 2px solid #334155;
+      }
+
+      .neon-text {
+        text-shadow: 0 0 10px currentColor;
+      }
+    </style>
+  </head>
+  <body
+    class="h-screen w-screen flex flex-col items-center justify-center relative"
+  >
+    <!-- 顶部UI -->
+    <div
+      class="absolute top-4 w-full max-w-lg flex justify-between px-6 z-10 pointer-events-none"
+    >
+      <div>
+        <p class="text-[10px] text-slate-400">SCORE</p>
+        <p id="scoreEl" class="text-2xl text-yellow-400 neon-text">0</p>
+      </div>
+      <div>
+        <p class="text-[10px] text-slate-400 text-right">LIVES</p>
+        <div id="livesEl" class="flex gap-1 text-red-500 text-xl">❤❤❤</div>
+      </div>
+    </div>
+
+    <div class="relative">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- 遮罩层 -->
+      <div
+        id="overlay"
+        class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-20"
+      >
+        <h1
+          class="text-4xl md:text-5xl font-bold text-yellow-400 mb-2 neon-text"
+          style="text-shadow: 0 0 20px rgba(234, 179, 8, 0.6)"
+        >
+          NEON<br />BREAKER
+        </h1>
+        <p id="statusText" class="text-sm text-slate-300 mb-8 tracking-widest">
+          READY PLAYER ONE
+        </p>
+        <button
+          id="startBtn"
+          class="px-8 py-3 bg-yellow-500/20 border border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-slate-900 transition-all font-bold rounded shadow-[0_0_15px_rgba(234,179,8,0.4)]"
+        >
+          START MISSION
+        </button>
+        <p class="mt-4 text-[10px] text-slate-500">
+          接住掉落的白球可获得多球效果
+        </p>
+      </div>
+    </div>
+
+    <div class="absolute bottom-4 text-[10px] text-slate-600">
+      Made for Neon Arcade
+    </div>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreEl = document.getElementById("scoreEl");
+        const livesEl = document.getElementById("livesEl");
+        const overlay = document.getElementById("overlay");
+        const startBtn = document.getElementById("startBtn");
+        const statusText = document.getElementById("statusText");
+
+        // 响应式画布
+        let w, h;
+        function resize() {
+          w = Math.min(window.innerWidth - 20, 500);
+          h = Math.min(window.innerHeight - 100, 600);
+          canvas.width = w;
+          canvas.height = h;
+          if (!isPlaying && balls.length === 0) resetBallPaddle(); // 仅在完全未开始时重置
+        }
+        window.addEventListener("resize", resize);
+
+        // 游戏参数
+        const paddleHeight = 10;
+        let paddleWidth = 80;
+        const ballRadius = 6;
+
+        // 增加砖块数量
+        const brickRowCount = 12; // 增加到12行
+        const brickColumnCount = 8; // 增加到8列
+
+        // 调整砖块尺寸以适应更密集的布局
+        let brickWidth,
+          brickHeight = 16,
+          brickPadding = 6,
+          brickOffsetTop = 50,
+          brickOffsetLeft = 35;
+
+        let score = 0;
+        let lives = 3;
+        let isPlaying = false;
+        let animationId;
+
+        // 实体对象
+        let paddle = { x: 0 };
+        let balls = []; // 改为数组支持多球
+        let bricks = [];
+        let particles = [];
+        let powerUps = []; // 掉落道具数组
+
+        // 颜色盘
+        const colors = [
+          "#ef4444",
+          "#f97316",
+          "#eab308",
+          "#22c55e",
+          "#3b82f6",
+          "#a855f7",
+          "#ec4899",
+          "#6366f1"
+        ];
+
+        function initBricks() {
+          bricks = [];
+          brickWidth =
+            (w - brickPadding * (brickColumnCount + 1)) / brickColumnCount;
+          brickOffsetLeft = brickPadding;
+
+          for (let c = 0; c < brickColumnCount; c++) {
+            bricks[c] = [];
+            for (let r = 0; r < brickRowCount; r++) {
+              bricks[c][r] = {
+                x: 0,
+                y: 0,
+                status: 1,
+                color: colors[r % colors.length]
+              };
+            }
+          }
+        }
+
+        // 创建一个新球
+        function createBall(x, y, speed = 5) {
+          // 随机初始角度
+          let dx = speed * 0.6 * (Math.random() > 0.5 ? 1 : -1);
+          let dy = -speed;
+          balls.push({ x: x, y: y, dx: dx, dy: dy, speed: speed });
+        }
+
+        function resetBallPaddle() {
+          paddle.x = (w - paddleWidth) / 2;
+          balls = [];
+          powerUps = [];
+          particles = [];
+          createBall(w / 2, h - 40);
+        }
+
+        // 输入控制
+        function movePaddle(clientX) {
+          const rect = canvas.getBoundingClientRect();
+          const relativeX = clientX - rect.left;
+          if (relativeX > 0 && relativeX < w) {
+            paddle.x = relativeX - paddleWidth / 2;
+          }
+          // 边界限制
+          if (paddle.x < 0) paddle.x = 0;
+          if (paddle.x + paddleWidth > w) paddle.x = w - paddleWidth;
+        }
+
+        document.addEventListener(
+          "mousemove",
+          (e) => isPlaying && movePaddle(e.clientX)
+        );
+        document.addEventListener(
+          "touchmove",
+          (e) => {
+            if (isPlaying) {
+              e.preventDefault();
+              movePaddle(e.touches[0].clientX);
+            }
+          },
+          { passive: false }
+        );
+
+        // 粒子特效
+        function createParticles(x, y, color) {
+          for (let i = 0; i < 6; i++) {
+            particles.push({
+              x: x,
+              y: y,
+              vx: (Math.random() - 0.5) * 5,
+              vy: (Math.random() - 0.5) * 5,
+              life: 1,
+              color: color
+            });
+          }
+        }
+
+        // 掉落道具逻辑
+        function spawnPowerUp(x, y) {
+          // 20% 几率掉落
+          if (Math.random() < 0.2) {
+            powerUps.push({
+              x: x,
+              y: y,
+              dy: 3, // 下落速度
+              type: "multiball"
+            });
+          }
+        }
+
+        function updateParticles() {
+          for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.04;
+            if (p.life <= 0) particles.splice(i, 1);
+          }
+        }
+
+        function updatePowerUps() {
+          for (let i = powerUps.length - 1; i >= 0; i--) {
+            let p = powerUps[i];
+            p.y += p.dy;
+
+            // 接住道具检测
+            if (
+              p.y + 10 > h - paddleHeight &&
+              p.y < h &&
+              p.x > paddle.x &&
+              p.x < paddle.x + paddleWidth
+            ) {
+              // 接住了！发射新球
+              playTone(600, "sine"); // Powerup sound
+              createBall(paddle.x + paddleWidth / 2, h - 50);
+              powerUps.splice(i, 1);
+              continue;
+            }
+
+            // 掉出屏幕
+            if (p.y > h) {
+              powerUps.splice(i, 1);
+            }
+          }
+        }
+
+        // 碰撞检测 (针对所有球)
+        function collisionDetection(ball) {
+          for (let c = 0; c < brickColumnCount; c++) {
+            for (let r = 0; r < brickRowCount; r++) {
+              let b = bricks[c][r];
+              if (b.status == 1) {
+                if (
+                  ball.x > b.x &&
+                  ball.x < b.x + brickWidth &&
+                  ball.y > b.y &&
+                  ball.y < b.y + brickHeight
+                ) {
+                  ball.dy = -ball.dy;
+                  b.status = 0;
+                  score += 10 * (brickRowCount - r);
+                  scoreEl.innerText = score;
+                  createParticles(
+                    b.x + brickWidth / 2,
+                    b.y + brickHeight / 2,
+                    b.color
+                  );
+                  playTone(300 + r * 30, "triangle");
+
+                  // 尝试生成掉落物
+                  spawnPowerUp(b.x + brickWidth / 2, b.y + brickHeight / 2);
+
+                  checkWin();
+                }
+              }
+            }
+          }
+        }
+
+        function checkWin() {
+          let activeBricks = 0;
+          bricks.forEach((col) =>
+            col.forEach((b) => {
+              if (b.status === 1) activeBricks++;
+            })
+          );
+          if (activeBricks === 0) {
+            gameOver(true);
+          }
+        }
+
+        function update() {
+          if (!isPlaying) return;
+
+          updateParticles();
+          updatePowerUps();
+
+          // 更新所有球
+          for (let i = balls.length - 1; i >= 0; i--) {
+            let b = balls[i];
+            b.x += b.dx;
+            b.y += b.dy;
+
+            // 墙壁反弹
+            if (b.x + ballRadius > w || b.x - ballRadius < 0) {
+              b.dx = -b.dx;
+              // playTone(100, 'square');
+            }
+            if (b.y - ballRadius < 0) {
+              b.dy = -b.dy;
+              playTone(150, "square");
+            } else if (b.y + ballRadius > h) {
+              // 球掉出屏幕，移除这个球
+              balls.splice(i, 1);
+              continue;
+            }
+
+            // 挡板反弹
+            if (b.y + ballRadius > h - paddleHeight - 5 && b.y < h) {
+              if (b.x > paddle.x && b.x < paddle.x + paddleWidth) {
+                let hitPoint = b.x - (paddle.x + paddleWidth / 2);
+                hitPoint = hitPoint / (paddleWidth / 2);
+
+                if (b.speed < 10) b.speed += 0.1; // 每次击打稍微加速
+
+                b.dx = hitPoint * 5;
+                b.dy = -Math.sqrt(
+                  Math.max(16, b.speed * b.speed - b.dx * b.dx)
+                ); // 保持速度向量长度
+
+                playTone(200, "square"); // Paddle sound
+                createParticles(b.x, h - paddleHeight, "#eab308");
+              }
+            }
+
+            collisionDetection(b);
+          }
+
+          // 检查生命值 (所有球都掉了才算输)
+          if (balls.length === 0) {
+            lives--;
+            if (lives > 0) {
+              livesEl.innerText = "❤".repeat(lives);
+              playTone(100, "sawtooth");
+              // 重新发球
+              balls = []; // 确保清空
+              createBall(w / 2, h - 40);
+            } else {
+              gameOver(false);
+            }
+          }
+        }
+
+        function draw() {
+          ctx.fillStyle = "#0f172a";
+          ctx.fillRect(0, 0, w, h);
+
+          // 画粒子
+          ctx.globalAlpha = 1;
+          for (let p of particles) {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, 3, 3);
+          }
+          ctx.globalAlpha = 1;
+
+          // 画掉落物
+          for (let p of powerUps) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ffffff";
+            ctx.fill();
+            ctx.closePath();
+            // 画一个内部核心
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = "#3b82f6";
+            ctx.fill();
+            ctx.closePath();
+            ctx.shadowBlur = 0;
+          }
+
+          // 画砖块
+          for (let c = 0; c < brickColumnCount; c++) {
+            for (let r = 0; r < brickRowCount; r++) {
+              if (bricks[c][r].status == 1) {
+                let brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+                let brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+                bricks[c][r].x = brickX;
+                bricks[c][r].y = brickY;
+
+                ctx.fillStyle = bricks[c][r].color;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = bricks[c][r].color;
+                ctx.fillRect(brickX, brickY, brickWidth, brickHeight);
+                ctx.shadowBlur = 0;
+              }
+            }
+          }
+
+          // 画球 (遍历所有球)
+          for (let b of balls) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "#ffffff";
+            ctx.fill();
+            ctx.closePath();
+            ctx.shadowBlur = 0;
+          }
+
+          // 画挡板
+          ctx.fillStyle = "#eab308"; // Yellow
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = "#eab308";
+          ctx.fillRect(
+            paddle.x,
+            h - paddleHeight - 5,
+            paddleWidth,
+            paddleHeight
+          );
+          ctx.shadowBlur = 0;
+        }
+
+        function loop() {
+          if (isPlaying) {
+            update();
+            draw();
+            animationId = requestAnimationFrame(loop);
+          }
+        }
+
+        function gameOver(win) {
+          isPlaying = false;
+          cancelAnimationFrame(animationId);
+          statusText.innerText = win ? "MISSION COMPLETE" : "GAME OVER";
+          statusText.className = win
+            ? "text-green-400 text-lg mb-8 font-bold"
+            : "text-red-500 text-lg mb-8 font-bold";
+          startBtn.innerText = "TRY AGAIN";
+          overlay.classList.remove("hidden");
+        }
+
+        // 音效
+        const audioCtx = new (window.AudioContext ||
+          window.webkitAudioContext)();
+        function playTone(freq, type) {
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.1
+          );
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        startBtn.addEventListener("click", () => {
+          score = 0;
+          lives = 3;
+          scoreEl.innerText = 0;
+          livesEl.innerText = "❤❤❤";
+          resize(); // 初始化尺寸
+          initBricks();
+          resetBallPaddle();
+          isPlaying = true;
+          overlay.classList.add("hidden");
+          loop();
+        });
+
+        // 初始设置
+        resize();
+      })();
+    </script>
+  </body>
+</html>
