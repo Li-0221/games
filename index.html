@@ -228,6 +228,79 @@
             PLAY NOW
           </span>
         </a>
+
+        <!-- 霓虹乒乓卡片 -->
+        <a
+          href="neon_pong.html"
+          class="game-card group rounded-2xl overflow-hidden p-6 flex flex-col items-center text-center cursor-pointer md:col-span-2 lg:col-span-1"
+          style="--hover-color: #d946ef; --hover-glow: rgba(217, 70, 239, 0.3)"
+        >
+          <div
+            class="w-full aspect-video bg-slate-900 rounded-xl mb-6 relative overflow-hidden border border-slate-700 group-hover:border-fuchsia-500/50 transition-colors flex items-center justify-center"
+          >
+            <div
+              class="absolute inset-0 flex items-center justify-center opacity-50 group-hover:opacity-100 transition-opacity"
+            >
+              <svg viewBox="0 0 100 50" class="w-32 h-16">
+                <!-- 左挡板 -->
+                <rect
+                  x="5"
+                  y="15"
+                  width="4"
+                  height="20"
+                  fill="#22d3ee"
+                  class="animate-pulse"
+                />
+                <!-- 右挡板 -->
+                <rect x="91" y="10" width="4" height="20" fill="#e879f9" />
+                <!-- 球 -->
+                <circle cx="50" cy="25" r="3" fill="white">
+                  <animate
+                    attributeName="cx"
+                    values="20;80;20"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="cy"
+                    values="25;15;35;25"
+                    dur="2s"
+                    repeatCount="indefinite"
+                  />
+                </circle>
+                <!-- 网 -->
+                <line
+                  x1="50"
+                  y1="0"
+                  x2="50"
+                  y2="50"
+                  stroke="#334155"
+                  stroke-width="1"
+                  stroke-dasharray="4"
+                />
+              </svg>
+            </div>
+            <div
+              class="absolute bottom-0 left-0 w-full h-1 bg-fuchsia-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"
+            ></div>
+          </div>
+
+          <h2
+            class="text-2xl font-bold text-fuchsia-400 mb-2 pixel-font text-xs md:text-lg"
+          >
+            NEON PONG
+          </h2>
+          <h3 class="text-xl font-bold text-white mb-3">霓虹乒乓</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-6">
+            复古乒乓对战。滑动手指控制光剑挡板，在不断加速的对决中击败AI。简单的操作，极致的反应挑战。
+          </p>
+
+          <span
+            class="mt-auto px-6 py-2 border border-fuchsia-500/30 text-fuchsia-400 rounded-full text-sm group-hover:bg-fuchsia-500 group-hover:text-slate-900 transition-all font-bold tracking-widest"
+          >
+            PLAY NOW
+          </span>
+        </a>
       </div>
     </main>
 
